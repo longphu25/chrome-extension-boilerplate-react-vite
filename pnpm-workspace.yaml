@@ -3,3 +3,4 @@ packages:
   - "pages/*"
   - "packages/*"
   - "tests/*"
+ignore-workspace-root-check: true
