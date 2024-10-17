@@ -1,0 +1,218 @@
+import { createRoot } from 'react-dom/client';
+
+const noop = () => {};
+
+export function setupTwitterObserver() {
+  console.log('Twitter observer setup');
+  const twitterReactRoot = document.getElementById('react-root')!;
+
+  const observer = new MutationObserver(mutations => {
+    // it's fast to iterate like this
+    for (let i = 0; i < mutations.length; i++) {
+      const mutation = mutations[i];
+
+      for (let j = 0; j < mutation.addedNodes.length; j++) {
+        const node = mutation.addedNodes[j];
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return;
+        }
+        handleNewNode(node as Element).catch(noop);
+      }
+    }
+  });
+
+  observer.observe(twitterReactRoot, { childList: true, subtree: true });
+}
+
+async function handleNewNode(node: Element) {
+  const element = node as Element;
+  // first quick filtration
+  if (!element || element.localName !== 'div') {
+    return;
+  }
+
+  let anchor;
+
+  const linkPreview = findLinkPreview(element);
+
+  let container = findContainerInTweet(linkPreview?.card ?? element, Boolean(linkPreview));
+
+  if (linkPreview) {
+    anchor = linkPreview.anchor;
+    container && container.remove();
+    container = linkPreview.card.parentElement as HTMLElement;
+  } else {
+    if (container) {
+      return;
+    }
+    const link = findLastLinkInText(element);
+    if (link) {
+      anchor = link.anchor;
+      container = getContainerForLink(link.tweetText);
+    }
+  }
+
+  if (!anchor || !container) return;
+
+  const shortenedUrl = anchor.href;
+  const actionUrl = await resolveTwitterShortenedUrl(shortenedUrl);
+  // const interstitialData = isInterstitial(actionUrl);
+
+  let actionApiUrl: string | null;
+  // if (interstitialData.isInterstitial) {
+  //     const interstitialState = getExtendedInterstitialState(
+  //         actionUrl.toString(),
+  //     );
+
+  //     if (
+  //         !checkSecurity(interstitialState, options.securityLevel.interstitials)
+  //     ) {
+  //         return;
+  //     }
+
+  //     actionApiUrl = interstitialData.decodedActionUrl;
+  // } else {
+  //     const websiteState = getExtendedWebsiteState(actionUrl.toString());
+
+  //     if (!checkSecurity(websiteState, options.securityLevel.websites)) {
+  //         return;
+  //     }
+
+  //     const actionsJsonUrl = actionUrl.origin + '/actions.json';
+  //     const actionsJson = await fetch(proxify(actionsJsonUrl)).then(
+  //         (res) => res.json() as Promise<ActionsJsonConfig>,
+  //     );
+
+  //     const actionsUrlMapper = new ActionsURLMapper(actionsJson);
+
+  //     actionApiUrl = actionsUrlMapper.mapUrl(actionUrl);
+  // }
+
+  // const state = actionApiUrl ? getExtendedActionState(actionApiUrl) : null;
+  // if (
+  //     !actionApiUrl ||
+  //     !state ||
+  //     !checkSecurity(state, options.securityLevel.actions)
+  // ) {
+  //     return;
+  // }
+
+  const { container: actionContainer, reactRoot } = createAction({
+    originalUrl: actionUrl,
+  });
+
+  addStyles(container).replaceChildren(actionContainer);
+
+  new MutationObserver((mutations, observer) => {
+    for (const mutation of mutations) {
+      for (const removedNode of Array.from(mutation.removedNodes)) {
+        if (removedNode === actionContainer || !document.body.contains(actionContainer)) {
+          reactRoot.unmount();
+          observer.disconnect();
+        }
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+}
+
+function createAction({ originalUrl }: { originalUrl: URL }) {
+  const container = document.createElement('div');
+  container.className = 'pin-box-action-root-container';
+
+  const actionRoot = createRoot(container);
+  console.log('originalUrl.toString()', originalUrl.toString());
+  console.log('originalUrl.hostname', originalUrl.hostname);
+  actionRoot.render(
+    <div onClick={e => e.stopPropagation()}>
+      render originalUrl: {originalUrl.toString()}
+      <div style={{ width: '300px', height: '300px', backgroundColor: 'red' }}></div>
+      {/* <Blink
+          stylePreset={resolveXStylePreset()}
+          action={action}
+          websiteUrl={originalUrl.toString()}
+          websiteText={originalUrl.hostname}
+          callbacks={callbacks}
+          securityLevel={options.securityLevel}
+        /> */}
+    </div>,
+  );
+
+  return { container, reactRoot: actionRoot };
+}
+
+function findLinkPreview(element: Element) {
+  const card = findElementByTestId(element, 'card.wrapper');
+  if (!card) {
+    return null;
+  }
+
+  const anchor = card.children[0]?.children[0] as HTMLAnchorElement;
+
+  return anchor ? { anchor, card } : null;
+}
+
+function findElementByTestId(element: Element, testId: string) {
+  if (element.attributes.getNamedItem('data-testid')?.value === testId) {
+    return element;
+  }
+  return element.querySelector(`[data-testid="${testId}"]`);
+}
+
+function findContainerInTweet(element: Element, searchUp?: boolean) {
+  const message = searchUp
+    ? (element.closest(`[data-testid="tweet"]`) ?? element.closest(`[data-testid="messageEntry"]`))
+    : (findElementByTestId(element, 'tweet') ?? findElementByTestId(element, 'messageEntry'));
+
+  if (message) {
+    return message.querySelector('.pin-box-wrapper') as HTMLElement;
+  }
+  return null;
+}
+
+function findLastLinkInText(element: Element) {
+  const tweetText = findElementByTestId(element, 'tweetText');
+  if (!tweetText) {
+    return null;
+  }
+
+  const links = tweetText.getElementsByTagName('a');
+  if (links.length > 0) {
+    const anchor = links[links.length - 1] as HTMLAnchorElement;
+    return { anchor, tweetText };
+  }
+  return null;
+}
+
+function getContainerForLink(tweetText: Element) {
+  const root = document.createElement('div');
+  root.className = 'pin-box-wrapper';
+  const dm = tweetText.closest(`[data-testid="messageEntry"]`);
+  if (dm) {
+    root.classList.add('pin-box-dm');
+    tweetText.parentElement?.parentElement?.prepend(root);
+  } else {
+    tweetText.parentElement?.append(root);
+  }
+  return root;
+}
+
+async function resolveTwitterShortenedUrl(shortenedUrl: string): Promise<URL> {
+  const res = await fetch(shortenedUrl);
+  const html = await res.text();
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const actionUrl = doc.querySelector('title')?.textContent;
+  return new URL(actionUrl!);
+}
+
+function addStyles(element: HTMLElement) {
+  if (element && element.classList.contains('pin-box-wrapper')) {
+    element.style.marginTop = '12px';
+    if (element.classList.contains('pin-box-dm')) {
+      element.style.marginBottom = '8px';
+      element.style.width = '100%';
+      element.style.minWidth = '350px';
+    }
+  }
+  return element;
+}

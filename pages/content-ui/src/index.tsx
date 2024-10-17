@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import App from '@src/App';
 import tailwindcssOutput from '../dist/tailwind-output.css?inline';
+import { setupTwitterObserver } from './twitter';
 
 const root = document.createElement('div');
 root.id = 'chrome-extension-boilerplate-react-vite-content-view-root';
@@ -27,6 +28,15 @@ if (navigator.userAgent.includes('Firefox')) {
   const globalStyleSheet = new CSSStyleSheet();
   globalStyleSheet.replaceSync(tailwindcssOutput);
   shadowRoot.adoptedStyleSheets = [globalStyleSheet];
+}
+
+function initTwitterObserver() {
+  setupTwitterObserver();
+}
+
+if (window.location.href.startsWith('https://x.com')) {
+  // console.log(window.location.href);
+  initTwitterObserver();
 }
 
 shadowRoot.appendChild(rootIntoShadow);
