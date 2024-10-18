@@ -1,4 +1,8 @@
 import { createRoot } from 'react-dom/client';
+import { isInterstitial, proxify } from './utils';
+import type { ActionGetResponse } from './types/Action.type';
+
+import Box from './ui/Box';
 
 const noop = () => {};
 
@@ -56,49 +60,30 @@ async function handleNewNode(node: Element) {
 
   const shortenedUrl = anchor.href;
   const actionUrl = await resolveTwitterShortenedUrl(shortenedUrl);
-  // const interstitialData = isInterstitial(actionUrl);
-
+  const interstitialData = isInterstitial(actionUrl);
+  console.log('interstitialData', interstitialData);
   let actionApiUrl: string | null;
-  // if (interstitialData.isInterstitial) {
-  //     const interstitialState = getExtendedInterstitialState(
-  //         actionUrl.toString(),
-  //     );
+  if (interstitialData.isInterstitial) {
+    actionApiUrl = interstitialData.decodedActionUrl;
+  }
 
-  //     if (
-  //         !checkSecurity(interstitialState, options.securityLevel.interstitials)
-  //     ) {
-  //         return;
-  //     }
+  const proxyUrl = proxify(actionApiUrl);
+  const response = await fetch(proxyUrl, {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
 
-  //     actionApiUrl = interstitialData.decodedActionUrl;
-  // } else {
-  //     const websiteState = getExtendedWebsiteState(actionUrl.toString());
+  if (!response.ok) {
+    throw new Error(`Failed to fetch action ${proxyUrl}, action url: ${actionApiUrl}`);
+  }
 
-  //     if (!checkSecurity(websiteState, options.securityLevel.websites)) {
-  //         return;
-  //     }
-
-  //     const actionsJsonUrl = actionUrl.origin + '/actions.json';
-  //     const actionsJson = await fetch(proxify(actionsJsonUrl)).then(
-  //         (res) => res.json() as Promise<ActionsJsonConfig>,
-  //     );
-
-  //     const actionsUrlMapper = new ActionsURLMapper(actionsJson);
-
-  //     actionApiUrl = actionsUrlMapper.mapUrl(actionUrl);
-  // }
-
-  // const state = actionApiUrl ? getExtendedActionState(actionApiUrl) : null;
-  // if (
-  //     !actionApiUrl ||
-  //     !state ||
-  //     !checkSecurity(state, options.securityLevel.actions)
-  // ) {
-  //     return;
-  // }
+  const data = (await response.json()) as ActionGetResponse;
+  console.log('data', data);
 
   const { container: actionContainer, reactRoot } = createAction({
     originalUrl: actionUrl,
+    data: data,
   });
 
   addStyles(container).replaceChildren(actionContainer);
@@ -115,7 +100,7 @@ async function handleNewNode(node: Element) {
   }).observe(document.body, { childList: true, subtree: true });
 }
 
-function createAction({ originalUrl }: { originalUrl: URL }) {
+function createAction({ originalUrl, data }: { originalUrl: URL; data: ActionGetResponse }) {
   const container = document.createElement('div');
   container.className = 'pin-box-action-root-container';
 
@@ -124,8 +109,8 @@ function createAction({ originalUrl }: { originalUrl: URL }) {
   console.log('originalUrl.hostname', originalUrl.hostname);
   actionRoot.render(
     <div onClick={e => e.stopPropagation()}>
-      render originalUrl: {originalUrl.toString()}
-      <div style={{ width: '300px', height: '300px', backgroundColor: 'red' }}></div>
+      {/* render originalUrl: {originalUrl.toString()} */}
+      <Box data={data} />
       {/* <Blink
           stylePreset={resolveXStylePreset()}
           action={action}
