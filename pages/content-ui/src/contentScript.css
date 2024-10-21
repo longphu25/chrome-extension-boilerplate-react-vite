@@ -3,31 +3,31 @@
 @tailwind utilities;
 
 #intro-extension ::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
+  width: 0px;
+  background: transparent;
 }
 
 .overlay {
-    width: 376px;
-    z-index: 9999;
-    position: fixed;
-    border-radius: '6px 0px 0px 6px';
+  width: 376px;
+  z-index: 9999;
+  position: fixed;
+  border-radius: '6px 0px 0px 6px';
 }
 
 @keyframes inAnimation {
-    0% {
-        right: -376px;
-    }
-    100% {
-        right: 0;
-    }
+  0% {
+    right: -376px;
+  }
+  100% {
+    right: 0;
+  }
 }
 
 @keyframes outAnimation {
-    0% {
-        right: 0;
-    }
-    100% {
-        right: -376px;
-    }
+  0% {
+    right: 0;
+  }
+  100% {
+    right: -376px;
+  }
 }

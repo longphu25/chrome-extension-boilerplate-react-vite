@@ -1,7 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
-import React, { createContext, PropsWithChildren, useContext, useState } from 'react';
-import { useWallet, Wallet } from '@txnlab/use-wallet-react';
+import type { PropsWithChildren } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import type { Wallet } from '@txnlab/use-wallet-react';
+import { useWallet } from '@txnlab/use-wallet-react';
 import { Button } from '@extension/ui';
 
 type WalletModalContextType = {

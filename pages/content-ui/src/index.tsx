@@ -3,12 +3,9 @@ import App from '@src/App';
 import tailwindcssOutput from '../dist/tailwind-output.css?inline';
 import { setupTwitterObserver } from './twitter';
 
-import { AppProvider } from '@src/providers/AppProvider';
-
 // const script = document.createElement('script');
 // script.textContent = `
-//   // Suggest that Pera to use globalThis instead of global | window
-//   window.global = window;
+//   global = globalThis
 // `;
 
 // document.head.appendChild(script);
@@ -45,14 +42,14 @@ function initTwitterObserver() {
   setupTwitterObserver();
 }
 
+// if (document.defaultView) {
+//   document.defaultView.global = globalThis;
+// }
+
 if (window.location.href.startsWith('https://x.com')) {
   // console.log(window.location.href);
-  initTwitterObserver();
+  // initTwitterObserver();
 }
 
-// shadowRoot.appendChild(rootIntoShadow);
-// createRoot(rootIntoShadow).render(
-//   <AppProvider>
-//     <App />
-//   </AppProvider>
-// );
+shadowRoot.appendChild(rootIntoShadow);
+createRoot(rootIntoShadow).render(<App />);
