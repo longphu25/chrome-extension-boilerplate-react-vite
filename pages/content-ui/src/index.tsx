@@ -3,6 +3,17 @@ import App from '@src/App';
 import tailwindcssOutput from '../dist/tailwind-output.css?inline';
 import { setupTwitterObserver } from './twitter';
 
+import { AppProvider } from '@src/providers/AppProvider';
+
+// const script = document.createElement('script');
+// script.textContent = `
+//   // Suggest that Pera to use globalThis instead of global | window
+//   window.global = window;
+// `;
+
+// document.head.appendChild(script);
+// shadowRoot.appendChild(script);
+
 const root = document.createElement('div');
 root.id = 'chrome-extension-boilerplate-react-vite-content-view-root';
 
@@ -39,5 +50,9 @@ if (window.location.href.startsWith('https://x.com')) {
   initTwitterObserver();
 }
 
-shadowRoot.appendChild(rootIntoShadow);
-createRoot(rootIntoShadow).render(<App />);
+// shadowRoot.appendChild(rootIntoShadow);
+// createRoot(rootIntoShadow).render(
+//   <AppProvider>
+//     <App />
+//   </AppProvider>
+// );

@@ -1,7 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { isInterstitial, proxify } from './utils';
 import type { ActionGetResponse } from './types/Action.type';
-
 import Box from './ui/Box';
 
 const noop = () => {};
@@ -61,10 +60,13 @@ async function handleNewNode(node: Element) {
   const shortenedUrl = anchor.href;
   const actionUrl = await resolveTwitterShortenedUrl(shortenedUrl);
   const interstitialData = isInterstitial(actionUrl);
-  console.log('interstitialData', interstitialData);
+
   let actionApiUrl: string | null;
+
   if (interstitialData.isInterstitial) {
     actionApiUrl = interstitialData.decodedActionUrl;
+  } else {
+    return;
   }
 
   const proxyUrl = proxify(actionApiUrl);
@@ -79,7 +81,6 @@ async function handleNewNode(node: Element) {
   }
 
   const data = (await response.json()) as ActionGetResponse;
-  console.log('data', data);
 
   const { container: actionContainer, reactRoot } = createAction({
     originalUrl: actionUrl,
@@ -105,20 +106,16 @@ function createAction({ originalUrl, data }: { originalUrl: URL; data: ActionGet
   container.className = 'pin-box-action-root-container';
 
   const actionRoot = createRoot(container);
-  console.log('originalUrl.toString()', originalUrl.toString());
-  console.log('originalUrl.hostname', originalUrl.hostname);
+
   actionRoot.render(
-    <div onClick={e => e.stopPropagation()}>
-      {/* render originalUrl: {originalUrl.toString()} */}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={e => e.stopPropagation()}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') e.stopPropagation();
+      }}>
       <Box data={data} />
-      {/* <Blink
-          stylePreset={resolveXStylePreset()}
-          action={action}
-          websiteUrl={originalUrl.toString()}
-          websiteText={originalUrl.hostname}
-          callbacks={callbacks}
-          securityLevel={options.securityLevel}
-        /> */}
     </div>,
   );
 

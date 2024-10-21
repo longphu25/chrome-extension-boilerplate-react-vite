@@ -1,30 +1,64 @@
 import React from 'react';
-import type { ActionGetResponse } from '../types/Action.type';
+import type { ActionGetResponse, LinkedAction } from '../types/Action.type';
+// import { useWallet, Wallet } from "@txnlab/use-wallet-react";
+
+import {
+  ChakraProvider,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Text,
+  Heading,
+  Image,
+  Stack,
+  Button,
+  Divider,
+  ButtonGroup,
+} from '@chakra-ui/react';
 
 interface BoxProps {
   data: ActionGetResponse;
 }
 
 const Box: React.FC<BoxProps> = ({ data }) => {
+  // const { wallets, activeWallet, activeAddress, transactionSigner } = useWallet();
+
+  // const handleConnect = async (wallet: Wallet) => {
+  //   if (activeWallet) {
+  //     await activeWallet.disconnect();
+  //   }
+  //   await wallet.connect();
+  // };
+
+  // console.log('activeAddress', activeAddress);
   return (
-    <div className="flex items-center justify-between gap-2 rounded bg-blue-100 px-2 py-1 ring-2 ring-blue-500">
-      <img
-        src={data.icon}
-        alt={data.title}
-        className="aspect-square bg-muted rounded-md overflow-hidden w-full max-w-full object-center"
-      />
-      <h2 className="my-4">{data.title}</h2>
-      <p className="my-4">{data.description}</p>
-      <div className="flex justify-between mb-4">
-        <button className="btn">Button 1</button>
-        <button className="btn">Button 2</button>
-        <button className="btn">Button 3</button>
-      </div>
-      <div className="flex items-center">
-        <input type="text" placeholder="Enter text" className="flex-1 mr-2" />
-        <button className="btn">Submit</button>
-      </div>
-    </div>
+    <React.StrictMode>
+      <ChakraProvider>
+        <Card align="center">
+          <CardHeader>
+            <Heading size="md">Algorand Pin Box</Heading>
+          </CardHeader>
+          <CardBody>
+            <Image src={data.icon} alt={data.title} boxSize="sm" objectFit="cover" />
+            <Stack mt="6" spacing="3">
+              <Heading size="md">{data.title}</Heading>
+              <Text>{data.description}</Text>
+            </Stack>
+          </CardBody>
+          <Divider />
+          <CardFooter>
+            <ButtonGroup spacing="3">
+              {data.links.actions.map((action: LinkedAction, index: number) => (
+                <Button key={index} variant="solid" colorScheme="teal">
+                  {action.label}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </CardFooter>
+        </Card>
+      </ChakraProvider>
+    </React.StrictMode>
   );
 };
 
